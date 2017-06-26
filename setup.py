@@ -38,6 +38,7 @@ requirements = [
     "asn1crypto>=0.21.0",
     "six>=1.4.1",
 ]
+# `setup_requirements` must be kept in sync with `pyproject.toml`
 setup_requirements = []
 
 if sys.version_info < (3, 4):
