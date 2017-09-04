@@ -128,9 +128,7 @@ opaque struct::
         ...;
     } QM_TRANSMOGRIFICATION_CTX;
 
-Confusingly, functions that aren't always available on all supported
-versions of the library, should be defined in ``MACROS`` and *not* in
-``FUNCTIONS``. Fortunately, you just have to copy the signature::
+For functions just add the signature to ``FUNCTIONS``::
 
     int QM_transmogrify(QM_TRANSMOGRIFICATION_CTX *, int);
 
@@ -169,14 +167,21 @@ the necessarily type definitions are in place.
 Finally, add an entry to ``CONDITIONAL_NAMES`` with all of the things
 you want to conditionally export::
 
-    CONDITIONAL_NAMES = {
-        ...
-        "Cryptography_HAS_QUANTUM_TRANSMOGRIFICATION": [
+    def cryptography_has_quantum_transmogrification():
+        return [
             "QM_TRANSMOGRIFICATION_ALIGNMENT_LEFT",
             "QM_TRANSMOGRIFICATION_ALIGNMENT_RIGHT",
-            "QM_transmogrify"
+            "QM_transmogrify",
         ]
+
+
+    CONDITIONAL_NAMES = {
+        ...
+        "Cryptography_HAS_QUANTUM_TRANSMOGRIFICATION": (
+            cryptography_has_quantum_transmogrification
+        ),
     }
+
 
 Caveats
 ~~~~~~~

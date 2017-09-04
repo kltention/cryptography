@@ -563,6 +563,18 @@ X.509 CRL (Certificate Revocation List) Object
             over the network and used as part of a certificate verification
             process.
 
+    .. method:: is_signature_valid(public_key)
+
+        .. versionadded:: 2.1
+
+        .. warning::
+
+            Checking the validity of the signature on the CRL is insufficient
+            to know if the CRL should be trusted. More details are available
+            in :rfc:`5280`.
+
+        Returns True if the CRL signature is correct for given public key,
+        False otherwise.
 
 X.509 Certificate Builder
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -599,7 +611,7 @@ X.509 Certificate Builder
         >>> builder = builder.public_key(public_key)
         >>> builder = builder.add_extension(
         ...     x509.SubjectAlternativeName(
-        ...         [x509.DNSName(u'cryptography.io')]
+        ...         [x509.DNSName(b'cryptography.io')]
         ...     ),
         ...     critical=False
         ... )
@@ -1232,7 +1244,23 @@ General Name Classes
 
     This corresponds to an email address. For example, ``user@example.com``.
 
+    ..note::
+
+        Starting with version 2.1 unicode input is deprecated. If passing an
+        internationalized domain name (IDN) you should first IDNA encode the
+        hostname and then pass the resulting bytes.
+
+    .. attribute:: bytes_value
+
+        .. versionadded:: 2.1
+
+        :type: bytes
+
     .. attribute:: value
+
+        .. deprecated:: 2.1
+
+        Deprecated accessor for the idna-decoded value of :attr:`bytes_value`
 
         :type: :term:`text`
 
@@ -1242,7 +1270,17 @@ General Name Classes
 
     This corresponds to a domain name. For example, ``cryptography.io``.
 
+    .. attribute:: bytes_value
+
+        .. versionadded:: 2.1
+
+        :type: bytes
+
     .. attribute:: value
+
+        .. deprecated:: 2.1
+
+        Deprecated accessor for the idna-decoded value of :attr:`bytes_value`
 
         :type: :term:`text`
 
@@ -1261,14 +1299,25 @@ General Name Classes
     .. versionadded:: 0.9
 
     This corresponds to a uniform resource identifier.  For example,
-    ``https://cryptography.io``. The URI is parsed and IDNA decoded (see
-    :rfc:`5895`).
+    ``https://cryptography.io``.
 
-    .. note::
+    ..note::
 
-        URIs that do not contain ``://`` in them will not be decoded.
+        Starting with version 2.1 unicode input is deprecated. If passing an
+        internationalized domain name (IDN) you should first IDNA encode the
+        hostname and then pass the resulting bytes.
+
+    .. attribute:: bytes_value
+
+        .. versionadded:: 2.1
+
+        :type: bytes
 
     .. attribute:: value
+
+        .. deprecated:: 2.1
+
+        Deprecated accessor for the idna-decoded value of :attr:`bytes_value`
 
         :type: :term:`text`
 
@@ -1812,6 +1861,32 @@ X.509 Extensions
             :ref:`general name classes <general_name_classes>`.
 
         :returns: A list of values extracted from the matched general names.
+
+
+.. class:: PrecertificateSignedCertificateTimestamps(scts)
+
+    .. versionadded:: 2.0
+
+    This extension contains
+    :class:`~cryptography.x509.certificate_transparency.SignedCertificateTimestamp`
+    instances which were issued for the pre-certificate corresponding to this
+    certificate. These can be used to verify that the certificate is included
+    in a public Certificate Transparency log.
+
+    It is an iterable containing one or more
+    :class:`~cryptography.x509.certificate_transparency.SignedCertificateTimestamp`
+    objects.
+
+    :param list scts: A ``list`` of
+        :class:`~cryptography.x509.certificate_transparency.SignedCertificateTimestamp`
+        objects.
+
+    .. attribute:: oid
+
+        :type: :class:`ObjectIdentifier`
+
+        Returns
+        :attr:`~cryptography.x509.oid.ExtensionOID.PRECERT_SIGNED_CERTIFICATE_TIMESTAMPS`.
 
 
 .. class:: AuthorityInformationAccess(descriptions)
@@ -2484,6 +2559,13 @@ instances. The following common OIDs are available as constants.
 
         Corresponds to the dotted string ``"1.3.6.1.5.5.7.3.9"``. This is used
         to denote that a certificate may be used for signing OCSP responses.
+
+    .. attribute:: ANY_EXTENDED_KEY_USAGE
+
+        .. versionadded:: 2.0
+
+        Corresponds to the dotted string ``"2.5.29.37.0"``. This is used to
+        denote that a certificate may be used for _any_ purposes.
 
 
 .. class:: AuthorityInformationAccessOID

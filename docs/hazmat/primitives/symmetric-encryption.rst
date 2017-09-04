@@ -16,6 +16,9 @@ decrypt them.
 For this reason it is **strongly** recommended to combine encryption with a
 message authentication code, such as :doc:`HMAC </hazmat/primitives/mac/hmac>`,
 in an "encrypt-then-MAC" formulation as `described by Colin Percival`_.
+``cryptography`` includes a recipe named :doc:`/fernet` that does this for you.
+**To minimize the risk of security issues you should evaluate Fernet to see if
+it fits your needs before implementing anything using this module.**
 
 .. class:: Cipher(algorithm, mode, backend)
 
@@ -291,6 +294,11 @@ Modes
 
     .. danger::
 
+        If you are encrypting data that can fit into memory you should strongly
+        consider using
+        :class:`~cryptography.hazmat.primitives.ciphers.aead.AESGCM` instead
+        of this.
+
         When using this mode you **must** not use the decrypted data until
         the appropriate finalization method
         (:meth:`~cryptography.hazmat.primitives.ciphers.CipherContext.finalize`
@@ -432,7 +440,7 @@ Insecure modes
     **Padding is required when using this mode.**
 
 Interfaces
-----------
+~~~~~~~~~~
 
 .. currentmodule:: cryptography.hazmat.primitives.ciphers
 
@@ -686,6 +694,17 @@ Interfaces used by the symmetric cipher modes described in
 
         Exact requirements of the tag are described by the documentation of
         individual modes.
+
+Exceptions
+~~~~~~~~~~
+
+.. currentmodule:: cryptography.exceptions
+
+
+.. class:: InvalidTag
+
+    This is raised if an authenticated encryption tag fails to verify during
+    decryption.
 
 
 

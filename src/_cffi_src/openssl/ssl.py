@@ -26,6 +26,7 @@ static const long Cryptography_HAS_GET_SERVER_TMP_KEY;
 static const long Cryptography_HAS_SSL_CTX_SET_CLIENT_CERT_ENGINE;
 static const long Cryptography_HAS_SSL_CTX_CLEAR_OPTIONS;
 static const long Cryptography_HAS_DTLS;
+static const long Cryptography_HAS_GENERIC_DTLS_METHOD;
 
 /* Internally invented symbol to tell us if SNI is supported */
 static const long Cryptography_HAS_TLSEXT_HOSTNAME;
@@ -244,9 +245,6 @@ size_t SSL_get_peer_finished(const SSL *, void *, size_t);
 Cryptography_STACK_OF_X509_NAME *SSL_load_client_CA_file(const char *);
 
 const char *SSL_get_servername(const SSL *, const int);
-"""
-
-MACROS = """
 /* Function signature changed to const char * in 1.1.0 */
 const char *SSL_CIPHER_get_version(const SSL_CIPHER *);
 /* These became macros in 1.1.0 */
@@ -330,6 +328,11 @@ const SSL_METHOD *TLSv1_client_method(void);
 const SSL_METHOD *DTLSv1_method(void);
 const SSL_METHOD *DTLSv1_server_method(void);
 const SSL_METHOD *DTLSv1_client_method(void);
+
+/* Added in 1.0.2 */
+const SSL_METHOD *DTLS_method(void);
+const SSL_METHOD *DTLS_server_method(void);
+const SSL_METHOD *DTLS_client_method(void);
 
 const SSL_METHOD *SSLv23_method(void);
 const SSL_METHOD *SSLv23_server_method(void);
@@ -417,6 +420,8 @@ size_t SSL_SESSION_get_master_key(const SSL_SESSION *, unsigned char *,
                                   size_t);
 size_t SSL_get_client_random(const SSL *, unsigned char *, size_t);
 size_t SSL_get_server_random(const SSL *, unsigned char *, size_t);
+int SSL_export_keying_material(SSL *, unsigned char *, size_t, const char *,
+                               size_t, const unsigned char *, size_t, int);
 
 long SSL_CTX_sess_number(SSL_CTX *);
 long SSL_CTX_sess_connect(SSL_CTX *);
@@ -590,13 +595,21 @@ static const long TLS_ST_BEFORE = 0;
 static const long TLS_ST_OK = 0;
 #endif
 
-#ifndef OPENSSL_NO_DTLS
+#if defined(OPENSSL_NO_DTLS) || CRYPTOGRAPHY_OPENSSL_LESS_THAN_102
+static const long Cryptography_HAS_GENERIC_DTLS_METHOD = 0;
+const SSL_METHOD *(*DTLS_method)(void) = NULL;
+const SSL_METHOD *(*DTLS_server_method)(void) = NULL;
+const SSL_METHOD *(*DTLS_client_method)(void) = NULL;
+#else
+static const long Cryptography_HAS_GENERIC_DTLS_METHOD = 1;
+#endif
+
 static const long Cryptography_HAS_DTLS = 1;
 /* Wrap DTLSv1_get_timeout to avoid cffi to handle a 'struct timeval'. */
 long Cryptography_DTLSv1_get_timeout(SSL *ssl, time_t *ptv_sec,
                                      long *ptv_usec) {
     struct timeval tv = { 0 };
-    int r = DTLSv1_get_timeout(ssl, &tv);
+    long r = DTLSv1_get_timeout(ssl, &tv);
 
     if (r == 1) {
         if (ptv_sec) {
@@ -610,9 +623,4 @@ long Cryptography_DTLSv1_get_timeout(SSL *ssl, time_t *ptv_sec,
 
     return r;
 }
-#else
-static const long Cryptography_HAS_DTLS = 0;
-long (*DTLSv1_get_timeout_wrapped)(SSL *, time_t *, long int *) = NULL;
-long (*DTLSv1_handle_timeout)(SSL *) = NULL;
-#endif
 """

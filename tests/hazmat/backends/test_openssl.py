@@ -127,10 +127,7 @@ class TestOpenSSL(object):
     def test_error_strings_loaded(self):
         # returns a value in a static buffer
         err = backend._lib.ERR_error_string(101183626, backend._ffi.NULL)
-        assert backend._ffi.string(err) == (
-            b"error:0607F08A:digital envelope routines:EVP_EncryptFinal_ex:"
-            b"data not multiple of block length"
-        )
+        assert b"data not multiple of block length" in backend._ffi.string(err)
 
     def test_unknown_error_in_cipher_finalize(self):
         cipher = Cipher(AES(b"\0" * 16), CBC(b"\0" * 16), backend=backend)
@@ -368,24 +365,6 @@ class TestOpenSSLRSA(object):
                 ),
             ) is True
 
-    def test_rsa_padding_unsupported_oaep_ripemd160_sha1(self):
-        assert backend.rsa_padding_supported(
-            padding.OAEP(
-                mgf=padding.MGF1(algorithm=hashes.RIPEMD160()),
-                algorithm=hashes.SHA1(),
-                label=None
-            ),
-        ) is False
-
-    def test_rsa_padding_unsupported_oaep_sha1_ripemd160(self):
-        assert backend.rsa_padding_supported(
-            padding.OAEP(
-                mgf=padding.MGF1(algorithm=hashes.SHA1()),
-                algorithm=hashes.RIPEMD160(),
-                label=None
-            ),
-        ) is False
-
     def test_rsa_padding_unsupported_mgf(self):
         assert backend.rsa_padding_supported(
             padding.OAEP(
@@ -431,26 +410,14 @@ class TestOpenSSLRSA(object):
                 )
             )
 
-    def test_unsupported_mgf1_hash_algorithm_ripemd160_decrypt(self):
+    def test_unsupported_mgf1_hash_algorithm_md5_decrypt(self):
         private_key = RSA_KEY_512.private_key(backend)
         with raises_unsupported_algorithm(_Reasons.UNSUPPORTED_PADDING):
             private_key.decrypt(
                 b"0" * 64,
                 padding.OAEP(
-                    mgf=padding.MGF1(algorithm=hashes.RIPEMD160()),
-                    algorithm=hashes.RIPEMD160(),
-                    label=None
-                )
-            )
-
-    def test_unsupported_mgf1_hash_algorithm_whirlpool_decrypt(self):
-        private_key = RSA_KEY_512.private_key(backend)
-        with raises_unsupported_algorithm(_Reasons.UNSUPPORTED_PADDING):
-            private_key.decrypt(
-                b"0" * 64,
-                padding.OAEP(
-                    mgf=padding.MGF1(algorithm=hashes.Whirlpool()),
-                    algorithm=hashes.Whirlpool(),
+                    mgf=padding.MGF1(algorithm=hashes.MD5()),
+                    algorithm=hashes.MD5(),
                     label=None
                 )
             )
@@ -617,6 +584,10 @@ class TestOpenSSLDHSerialization(object):
             public_key.public_bytes(
                 serialization.Encoding.PEM,
                 serialization.PublicFormat.SubjectPublicKeyInfo)
+        with raises_unsupported_algorithm(_Reasons.UNSUPPORTED_SERIALIZATION):
+            parameters.parameters(backend).parameter_bytes(
+                serialization.Encoding.PEM,
+                serialization.ParameterFormat.PKCS3)
 
     @pytest.mark.parametrize(
         ("key_path", "loader_func"),

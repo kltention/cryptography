@@ -24,9 +24,23 @@ from cryptography.x509.oid import (
 def _obj2txt(backend, obj):
     # Set to 80 on the recommendation of
     # https://www.openssl.org/docs/crypto/OBJ_nid2ln.html#return_values
+    #
+    # But OIDs longer than this occur in real life (e.g. Active
+    # Directory makes some very long OIDs).  So we need to detect
+    # and properly handle the case where the default buffer is not
+    # big enough.
+    #
     buf_len = 80
     buf = backend._ffi.new("char[]", buf_len)
+
+    # 'res' is the number of bytes that *would* be written if the
+    # buffer is large enough.  If 'res' > buf_len - 1, we need to
+    # alloc a big-enough buffer and go again.
     res = backend._lib.OBJ_obj2txt(buf, buf_len, obj, 1)
+    if res > buf_len - 1:  # account for terminating null byte
+        buf_len = res + 1
+        buf = backend._ffi.new("char[]", buf_len)
+        res = backend._lib.OBJ_obj2txt(buf, buf_len, obj, 1)
     backend.openssl_assert(res > 0)
     return backend._ffi.buffer(buf, res)[:].decode()
 
@@ -74,23 +88,7 @@ def _decode_general_names(backend, gns):
 def _decode_general_name(backend, gn):
     if gn.type == backend._lib.GEN_DNS:
         data = _asn1_string_to_bytes(backend, gn.d.dNSName)
-        if not data:
-            decoded = u""
-        elif data.startswith(b"*."):
-            # This is a wildcard name. We need to remove the leading wildcard,
-            # IDNA decode, then re-add the wildcard. Wildcard characters should
-            # always be left-most (RFC 2595 section 2.4).
-            decoded = u"*." + idna.decode(data[2:])
-        else:
-            # Not a wildcard, decode away. If the string has a * in it anywhere
-            # invalid this will raise an InvalidCodePoint
-            decoded = idna.decode(data)
-            if data.startswith(b"."):
-                # idna strips leading periods. Name constraints can have that
-                # so we need to re-add it. Sigh.
-                decoded = u"." + decoded
-
-        return x509.DNSName(decoded)
+        return x509.DNSName(data)
     elif gn.type == backend._lib.GEN_URI:
         data = _asn1_string_to_ascii(backend, gn.d.uniformResourceIdentifier)
         parsed = urllib_parse.urlparse(data)
@@ -583,6 +581,21 @@ def _decode_inhibit_any_policy(backend, asn1_int):
     return x509.InhibitAnyPolicy(skip_certs)
 
 
+def _decode_precert_signed_certificate_timestamps(backend, asn1_scts):
+    from cryptography.hazmat.backends.openssl.x509 import (
+        _SignedCertificateTimestamp
+    )
+    asn1_scts = backend._ffi.cast("Cryptography_STACK_OF_SCT *", asn1_scts)
+    asn1_scts = backend._ffi.gc(asn1_scts, backend._lib.SCT_LIST_free)
+
+    scts = []
+    for i in range(backend._lib.sk_SCT_num(asn1_scts)):
+        sct = backend._lib.sk_SCT_value(asn1_scts, i)
+
+        scts.append(_SignedCertificateTimestamp(backend, asn1_scts, sct))
+    return x509.PrecertificateSignedCertificateTimestamps(scts)
+
+
 #    CRLReason ::= ENUMERATED {
 #        unspecified             (0),
 #        keyCompromise           (1),
@@ -720,7 +733,7 @@ def _parse_asn1_generalized_time(backend, generalized_time):
     return datetime.datetime.strptime(time, "%Y%m%d%H%M%SZ")
 
 
-_EXTENSION_HANDLERS = {
+_EXTENSION_HANDLERS_NO_SCT = {
     ExtensionOID.BASIC_CONSTRAINTS: _decode_basic_constraints,
     ExtensionOID.SUBJECT_KEY_IDENTIFIER: _decode_subject_key_identifier,
     ExtensionOID.KEY_USAGE: _decode_key_usage,
@@ -738,6 +751,11 @@ _EXTENSION_HANDLERS = {
     ExtensionOID.NAME_CONSTRAINTS: _decode_name_constraints,
     ExtensionOID.POLICY_CONSTRAINTS: _decode_policy_constraints,
 }
+_EXTENSION_HANDLERS = _EXTENSION_HANDLERS_NO_SCT.copy()
+_EXTENSION_HANDLERS[
+    ExtensionOID.PRECERT_SIGNED_CERTIFICATE_TIMESTAMPS
+] = _decode_precert_signed_certificate_timestamps
+
 
 _REVOKED_EXTENSION_HANDLERS = {
     CRLEntryExtensionOID.CRL_REASON: _decode_crl_reason,
@@ -753,6 +771,12 @@ _CRL_EXTENSION_HANDLERS = {
         _decode_authority_information_access
     ),
 }
+
+_CERTIFICATE_EXTENSION_PARSER_NO_SCT = _X509ExtensionParser(
+    ext_count=lambda backend, x: backend._lib.X509_get_ext_count(x),
+    get_ext=lambda backend, x, i: backend._lib.X509_get_ext(x, i),
+    handlers=_EXTENSION_HANDLERS_NO_SCT
+)
 
 _CERTIFICATE_EXTENSION_PARSER = _X509ExtensionParser(
     ext_count=lambda backend, x: backend._lib.X509_get_ext_count(x),

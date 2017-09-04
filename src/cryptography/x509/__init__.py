@@ -4,7 +4,6 @@
 
 from __future__ import absolute_import, division, print_function
 
-from cryptography import utils
 from cryptography.x509 import certificate_transparency
 from cryptography.x509.base import (
     Certificate, CertificateBuilder, CertificateRevocationList,
@@ -23,8 +22,8 @@ from cryptography.x509.extensions import (
     ExtensionNotFound, ExtensionType, Extensions, GeneralNames,
     InhibitAnyPolicy, InvalidityDate, IssuerAlternativeName, KeyUsage,
     NameConstraints, NoticeReference, OCSPNoCheck, PolicyConstraints,
-    PolicyInformation, ReasonFlags, SubjectAlternativeName,
-    SubjectKeyIdentifier, UnrecognizedExtension, UnsupportedExtension,
+    PolicyInformation, PrecertificateSignedCertificateTimestamps, ReasonFlags,
+    SubjectAlternativeName, SubjectKeyIdentifier, UnrecognizedExtension,
     UserNotice
 )
 from cryptography.x509.general_name import (
@@ -110,13 +109,6 @@ OID_INVALIDITY_DATE = CRLEntryExtensionOID.INVALIDITY_DATE
 OID_CA_ISSUERS = AuthorityInformationAccessOID.CA_ISSUERS
 OID_OCSP = AuthorityInformationAccessOID.OCSP
 
-UnsupportedExtension = utils.deprecated(
-    UnsupportedExtension,
-    __name__,
-    "UnsupportedExtension is no longer necessary, it is never raised",
-    utils.DeprecatedIn19
-)
-
 __all__ = [
     "certificate_transparency",
     "load_pem_x509_certificate",
@@ -128,7 +120,6 @@ __all__ = [
     "random_serial_number",
     "InvalidVersion",
     "DuplicateExtension",
-    "UnsupportedExtension",
     "ExtensionNotFound",
     "UnsupportedGeneralNameType",
     "NameAttribute",
@@ -185,4 +176,5 @@ __all__ = [
     "InvalidityDate",
     "UnrecognizedExtension",
     "PolicyConstraints",
+    "PrecertificateSignedCertificateTimestamps",
 ]

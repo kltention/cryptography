@@ -1,3 +1,4 @@
+accessor
 affine
 Authenticator
 backend
@@ -19,12 +20,14 @@ cryptographic
 cryptographically
 Debian
 decrypt
+Decrypts
 decrypted
 decrypting
 DER
 deserialize
 deserialized
 Deserialization
+deserializing
 Diffie
 Diffie
 disambiguating
@@ -41,6 +44,7 @@ Google
 hazmat
 Homebrew
 hostname
+idna
 indistinguishability
 initialisms
 interoperable
@@ -93,4 +97,5 @@ verifier
 Verifier
 Verisign
 wildcard
+WoSign
 Xcode

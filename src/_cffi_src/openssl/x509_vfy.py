@@ -182,9 +182,6 @@ int X509_VERIFY_PARAM_set1_policies(X509_VERIFY_PARAM *,
 void X509_VERIFY_PARAM_set_depth(X509_VERIFY_PARAM *, int);
 int X509_VERIFY_PARAM_get_depth(const X509_VERIFY_PARAM *);
 void X509_VERIFY_PARAM_free(X509_VERIFY_PARAM *);
-"""
-
-MACROS = """
 /* this CRYPTO_EX_DATA function became a macro in 1.1.0 */
 int X509_STORE_CTX_get_ex_new_index(long, void *, CRYPTO_EX_new *,
                                     CRYPTO_EX_dup *, CRYPTO_EX_free *);
@@ -217,8 +214,8 @@ void X509_STORE_set_get_issuer(X509_STORE *, X509_STORE_CTX_get_issuer_fn);
 """
 
 CUSTOMIZATIONS = """
-/* OpenSSL 1.0.2beta2+ verification parameters and error codes */
-#if CRYPTOGRAPHY_OPENSSL_102BETA2_OR_GREATER
+/* OpenSSL 1.0.2+ verification parameters and error codes */
+#if CRYPTOGRAPHY_OPENSSL_102_OR_GREATER
 static const long Cryptography_HAS_102_VERIFICATION_ERROR_CODES = 1;
 static const long Cryptography_HAS_102_VERIFICATION_PARAMS = 1;
 #else

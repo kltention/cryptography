@@ -33,19 +33,8 @@ with open(os.path.join(src_dir, "cryptography", "__about__.py")) as f:
 
 VECTORS_DEPENDENCY = "cryptography_vectors=={0}".format(about['__version__'])
 
-requirements = [
-    "idna>=2.1",
-    "asn1crypto>=0.21.0",
-    "six>=1.4.1",
-]
 # `setup_requirements` must be kept in sync with `pyproject.toml`
 setup_requirements = []
-
-if sys.version_info < (3, 4):
-    requirements.append("enum34")
-
-if sys.version_info < (3, 3):
-    requirements.append("ipaddress")
 
 if platform.python_implementation() == "PyPy":
     if sys.pypy_version_info < (5, 3):
@@ -54,11 +43,10 @@ if platform.python_implementation() == "PyPy":
             "upgrade PyPy to use this library."
         )
 else:
-    requirements.append("cffi>=1.7")
     setup_requirements.append("cffi>=1.7")
 
 test_requirements = [
-    "pytest>=2.9.0",
+    "pytest>=3.2.1",
     "pretend",
     "iso8601",
     "pytz",
@@ -71,11 +59,6 @@ if sys.version_info[:2] > (2, 6):
 # need to go and get the matching vectors package from PyPi
 if not os.path.exists(os.path.join(base_dir, "vectors/setup.py")):
     test_requirements.append(VECTORS_DEPENDENCY)
-
-
-backends = [
-    "openssl = cryptography.hazmat.backends.openssl:backend"
-]
 
 
 class PyTest(test):
@@ -281,7 +264,6 @@ setup(
         "Programming Language :: Python :: 2.6",
         "Programming Language :: Python :: 2.7",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.3",
         "Programming Language :: Python :: 3.4",
         "Programming Language :: Python :: 3.5",
         "Programming Language :: Python :: 3.6",
@@ -294,15 +276,22 @@ setup(
     packages=find_packages(where="src", exclude=["_cffi_src", "_cffi_src.*"]),
     include_package_data=True,
 
-    install_requires=requirements,
+    install_requires=[
+        "idna >= 2.1",
+        "asn1crypto >= 0.21.0",
+        "six >= 1.4.1",
+    ],
     tests_require=test_requirements,
     extras_require={
+        ":python_version < '3'": ["enum34", "ipaddress"],
+        ":python_implementation != 'PyPy'": ["cffi >= 1.7"],
+
         "test": test_requirements,
         "docstest": [
             "doc8",
-            "pyenchant",
+            "pyenchant >= 1.6.11",
             "readme_renderer >= 16.0",
-            "sphinx != 1.6.1",
+            "sphinx != 1.6.1, != 1.6.2, != 1.6.3",
             "sphinx_rtd_theme",
             "sphinxcontrib-spelling",
         ],
@@ -316,8 +305,5 @@ setup(
     # for cffi
     zip_safe=False,
     ext_package="cryptography.hazmat.bindings",
-    entry_points={
-        "cryptography.backends": backends,
-    },
     **keywords_with_side_effects(sys.argv)
 )
