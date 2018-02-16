@@ -215,8 +215,7 @@ also support providing integrity for associated data which is not encrypted.
 
     .. method:: decrypt(nonce, data, associated_data)
 
-        Decrypts the ``data`` and authenticates the ``associated_data``. If you
-        called encrypt with ``associated_data`` you must pass the same
+        Decrypts the ``data`` and authenticates the ``associated_data``. You must use the same
         ``associated_data`` in decrypt or the integrity check will fail.
 
         :param bytes nonce: A value of between 7 and 13 bytes. This
